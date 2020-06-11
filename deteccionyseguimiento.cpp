@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -15,12 +17,15 @@
 using namespace std;
 using namespace cv;
 
+std::string filename0 = "tiempos.csv";
 std::string filename1 = "recVerde.csv";
 std::string filename2 = "recRojo.csv";
 std::string filename3 = "recAmarillo.csv";
 ofstream outFile1/*, outFile2, outFile3*/;
 ofstream fs;
 
+struct timeval t1,t2,tf;
+int fotogmax, fotogmin,fotogtot;
 struct datosCoche{
 	float cx,cy;
 	float rx,ry;
@@ -271,14 +276,19 @@ cv::Point getKalmanPrediction(cv::KalmanFilter kf){
 }
 
 /*--------------------------------------------------------------------------*/
+int getDistance(cv::Point r1, cv::Point r2){
 
+
+	int distancia = sqrt(abs(pow(r1.x,2)-pow(r2.x,2))+abs(pow(r1.y,2)-pow(r2.y,2)));
+	return distancia;
+}
 // Main program
 int main( int argc, char *argv[] ){
 
 
     // Open the video for processing it
     cv::VideoCapture video;
-    video.open("videos/video9.mp4");
+    video.open("videos/video8.mp4");
 
     // Check if the video is correctly opened
     if (!video.isOpened()){
@@ -295,9 +305,10 @@ int main( int argc, char *argv[] ){
     int fotog=0,flagV,flagR,flagA, detV=0, detR=0, detA=0, TTLV, TTLR, TTLA;
     int flagFilV=0, flagFilR=0, flagFilA=0;
     float oriV,oriR,oriA;
-    cv::Point centroV,centroR,centroA, kalmanV, kalmanR, kalmanA;
+    cv::Point centroV,centroR,centroA, kalmanV, kalmanR, kalmanA,antCentroV,antCentroR,antCentroA;
     vector<cv::Point> recoV,recoR,recoA;
     vector<int> recoVcoord,recoRcoord,recoAcoord;
+    vector<struct timeval> tfoto;
     cv::KalmanFilter filtroV, filtroR, filtroA;
     cv::Rect RectV, RectR, RectA;
 
@@ -310,6 +321,7 @@ int main( int argc, char *argv[] ){
     //para cada frame del video
     while(key != 'q' && video.get(CV_CAP_PROP_POS_FRAMES) < video.get(CV_CAP_PROP_FRAME_COUNT)){
 
+    	gettimeofday(&t1,NULL);
         // Read a frame
         video >> frame;
 
@@ -438,27 +450,28 @@ int main( int argc, char *argv[] ){
         		{
         			TTLV=0;
         			kalmanV=getKalmanPrediction(filtroV);
-        			updateKalman(filtroV,centroV.x,centroV.y, true);
+        			updateKalman(filtroV,centroV.x,centroV.y,true);
                 	cv::drawMarker(frame,Point(kalmanV.x, kalmanV.y),CV_RGB(130,255,130),MARKER_DIAMOND,10,2);
                 	//rectangle(frame, kalRectV, CV_RGB(0,0,0), 2);
         		}
         	}
-        cv::drawMarker(frame,centroV,CV_RGB(0,255,0),MARKER_CROSS,10,3);
+        cv::drawMarker(frame,antCentroV,CV_RGB(0,255,0),MARKER_CROSS,10,3);
         flagV=0;
         }
         else if(!flagV && detV>2 && flagFilV)
         {
 
         	kalmanV=getKalmanPrediction(filtroV);
-        	//updateKalman(filtroV,centroV.x,centroV.y, false);
-        	cv::drawMarker(frame,Point(kalmanV.x, kalmanV.y),CV_RGB(0,150,0),MARKER_CROSS,10,3);
+        	updateKalman(filtroV,kalmanV.x,kalmanV.y, false);
+
         	// si la prevision del kalman es coherente se actualiza el centro
         	if(abs(centroV.x-kalmanV.x)<100 && abs(centroV.y-kalmanV.y)<100 )
         	{
         		centroV=kalmanV;
+            	cv::drawMarker(frame,Point(kalmanV.x, kalmanV.y),CV_RGB(0,150,0),MARKER_CROSS,10,3);
         	}
         	TTLV++;
-        	if(TTLV>40)
+        	if(TTLV>10)
         	{
         		detV=0;
         	}
@@ -478,27 +491,28 @@ int main( int argc, char *argv[] ){
         		{
         			TTLR=0;
         			kalmanR=getKalmanPrediction(filtroR);
-        			updateKalman(filtroR,centroR.x,centroR.y, true);
+        			updateKalman(filtroR,centroR.x,centroR.y,true);
                 	cv::drawMarker(frame,Point(kalmanR.x, kalmanR.y),CV_RGB(255,130,130),MARKER_DIAMOND,10,2);
                 	//rectangle(frame, kalRectV, CV_RGB(0,0,0), 2);
         		}
         	}
-        cv::drawMarker(frame,centroR,CV_RGB(255,0,0),MARKER_CROSS,10,3);
+        cv::drawMarker(frame,antCentroR,CV_RGB(255,0,0),MARKER_CROSS,10,3);
         flagR=0;
         }
         else if(!flagR && detR>2 && flagFilR)
         {
 
         	kalmanR=getKalmanPrediction(filtroR);
-        	//updateKalman(filtroR,centroR.x,centroR.y, false);
-        	cv::drawMarker(frame,Point(kalmanR.x, kalmanR.y),CV_RGB(150,0,0),MARKER_CROSS,10,3);
+        	updateKalman(filtroR,kalmanR.x,kalmanR.y, false);
+
         	// si la prevision del kalman es coherente se actualiza el centro
-        	if(abs(centroR.x-kalmanR.x)<100 && abs(centroR.y-kalmanR.y)<100 )
+        	if(abs(centroR.x-kalmanR.x)<150 && abs(centroR.y-kalmanR.y)<150 )
         	{
         		centroR=kalmanR;
+            	cv::drawMarker(frame,Point(kalmanR.x, kalmanR.y),CV_RGB(150,0,0),MARKER_CROSS,10,3);
         	}
         	TTLR++;
-        	if(TTLR>40)
+        	if(TTLR>10)
         	{
         		detR=0;
         	}
@@ -512,33 +526,34 @@ int main( int argc, char *argv[] ){
         		{
         			filtroA=initKalman(centroA.x,centroA.y,1,0.1,0.1);
         			flagFilA++;
-        			TTLA=0;
+        			TTLR=0;
         		}
         		else if(detA>2)
         		{
         			TTLA=0;
         			kalmanA=getKalmanPrediction(filtroA);
-        			updateKalman(filtroA,centroA.x,centroA.y, true);
+        			updateKalman(filtroA,centroA.x,centroA.y,true);
                 	cv::drawMarker(frame,Point(kalmanA.x, kalmanA.y),CV_RGB(255,255,130),MARKER_DIAMOND,10,2);
                 	//rectangle(frame, kalRectA, CV_RGB(0,0,0), 2);
         		}
         	}
-        cv::drawMarker(frame,centroA,CV_RGB(255,255,0),MARKER_CROSS,10,3);
+        cv::drawMarker(frame,antCentroA,CV_RGB(255,255,0),MARKER_CROSS,10,3);
         flagA=0;
         }
         else if(!flagA && detA>2 && flagFilA)
         {
 
         	kalmanA=getKalmanPrediction(filtroA);
-        	//updateKalman(filtroA,centroA.x,centroA.y, false);
-        	cv::drawMarker(frame,Point(kalmanA.x, kalmanA.y),CV_RGB(150,150,0),MARKER_CROSS,10,3);
+        	updateKalman(filtroA,kalmanA.x,kalmanA.y, false);
+
         	// si la prevision del kalman es coherente se actualiza el centro
-        	if(abs(centroA.x-kalmanA.x)<100 && abs(centroA.y-kalmanA.y)<100 )
+        	if(abs(centroA.x-kalmanA.x)<150 && abs(centroA.y-kalmanA.y)<150 )
         	{
         		centroA=kalmanA;
+            	cv::drawMarker(frame,Point(kalmanA.x, kalmanA.y),CV_RGB(150,150,0),MARKER_CROSS,10,3);
         	}
         	TTLA++;
-        	if(TTLA>40)
+        	if(TTLA>10)
         	{
         		detA=0;
         	}
@@ -549,11 +564,19 @@ int main( int argc, char *argv[] ){
         sprintf(str,"frame: %d",(int)fotog);
         putText(frame, str, Point(10,30) , FONT_ITALIC, 0.75, CV_RGB(0,0,255), 2, 8, false );
 
+        if(detV>2 && flagFilV && getDistance(centroV,kalmanV)<400)
+        centroV=kalmanV;
+        if(detR>2 && flagFilR && getDistance(antCentroR,kalmanR)<400)
+        centroR=kalmanR;
+        if(detA>2 && flagFilA && getDistance(centroA,kalmanA)<400)
+        centroA=kalmanA;
+
+
 
         //pinta el ultimo centro conocido de cada coche detectado
         if(centroR.x>0)
         {
-        recoR.push_back(centroR);
+        recoR.push_back(antCentroR);
         recoRcoord.push_back(fotog);
         sprintf(str,"Rojo: ( %d, %d) %.1f deg",centroR.x, centroR.y, oriR);
         putText(frame, str, Point(centroR.x, centroR.y) , FONT_ITALIC, 0.75, CV_RGB(255,0,0), 2, 8, false );
@@ -561,7 +584,7 @@ int main( int argc, char *argv[] ){
 
         if(centroA.x>0)
         {
-        recoA.push_back(centroA);
+        recoA.push_back(antCentroA);
         recoAcoord.push_back(fotog);
         sprintf(str,"Amarillo: ( %d, %d) %.1f deg",centroA.x, centroA.y, oriA);
         putText(frame, str, Point(centroA.x, centroA.y) , FONT_ITALIC, 0.75, CV_RGB(255,255,0), 2, 8, false );
@@ -569,7 +592,7 @@ int main( int argc, char *argv[] ){
 
         if(centroV.x>0)
         {
-        recoV.push_back(centroV);
+        recoV.push_back(antCentroV);
         recoVcoord.push_back(fotog);
         sprintf(str,"Verde: ( %d, %d) %.1f deg",centroV.x, centroV.y, oriV);
         putText(frame, str, Point(centroV.x, centroV.y) , FONT_ITALIC, 0.75, CV_RGB(0,255,0), 2, 8, false );
@@ -601,15 +624,37 @@ int main( int argc, char *argv[] ){
         	}
         }
 
+        antCentroV=centroV;
+        antCentroR=centroR;
+        antCentroA=centroA;
+
         imshow("Mask", Mask);
         imshow("bgsMask", bgsMask);
         imshow("Video", frame);
 
         key = char(cv::waitKey(1));
+        gettimeofday(&t2,NULL);
+        tf.tv_usec=(t2.tv_usec - t1.tv_usec);
+        tf.tv_sec=(t2.tv_sec - t1.tv_sec);
+        tfoto.push_back(tf);
+
+        t2.tv_usec=0;
+        t1.tv_usec=0;
+		t1.tv_sec=0;
+		t2.tv_sec=0;
+		tf.tv_usec=0;
 
 		}
     // Close the video
     video.release();
+
+
+    	fs.open(filename0, std::fstream::out);
+    	for(int i = 0; i < recoV.size()-1 ; i++)
+    	{
+    		fs << i << "," << tfoto[i].tv_usec << "," << tfoto[i].tv_sec<< std::endl;
+    	}
+    	fs.close();
 
 
     if(recoV.size()>2 && recoV[1].x>0)
