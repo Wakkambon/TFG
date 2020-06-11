@@ -17,15 +17,15 @@
 using namespace std;
 using namespace cv;
 
-std::string filename0 = "tiempos.csv";
+//std::string filename0 = "tiempos.csv";
 std::string filename1 = "recVerde.csv";
 std::string filename2 = "recRojo.csv";
 std::string filename3 = "recAmarillo.csv";
 ofstream outFile1/*, outFile2, outFile3*/;
 ofstream fs;
 
-struct timeval t1,t2,tf;
-int fotogmax, fotogmin,fotogtot;
+//struct timeval t1,t2,tf;
+
 struct datosCoche{
 	float cx,cy;
 	float rx,ry;
@@ -308,7 +308,7 @@ int main( int argc, char *argv[] ){
     cv::Point centroV,centroR,centroA, kalmanV, kalmanR, kalmanA,antCentroV,antCentroR,antCentroA;
     vector<cv::Point> recoV,recoR,recoA;
     vector<int> recoVcoord,recoRcoord,recoAcoord;
-    vector<struct timeval> tfoto;
+    //vector<struct timeval> tfoto;
     cv::KalmanFilter filtroV, filtroR, filtroA;
     cv::Rect RectV, RectR, RectA;
 
@@ -321,7 +321,7 @@ int main( int argc, char *argv[] ){
     //para cada frame del video
     while(key != 'q' && video.get(CV_CAP_PROP_POS_FRAMES) < video.get(CV_CAP_PROP_FRAME_COUNT)){
 
-    	gettimeofday(&t1,NULL);
+    	//gettimeofday(&t1,NULL);
         // Read a frame
         video >> frame;
 
@@ -633,29 +633,24 @@ int main( int argc, char *argv[] ){
         imshow("Video", frame);
 
         key = char(cv::waitKey(1));
+/*   Analisis de tiempo de ejecucion
         gettimeofday(&t2,NULL);
         tf.tv_usec=(t2.tv_usec - t1.tv_usec);
-        tf.tv_sec=(t2.tv_sec - t1.tv_sec);
         tfoto.push_back(tf);
-
-        t2.tv_usec=0;
-        t1.tv_usec=0;
-		t1.tv_sec=0;
-		t2.tv_sec=0;
-		tf.tv_usec=0;
+*/
 
 		}
     // Close the video
     video.release();
 
-
+/* Analisis de tiempo de ejecucion
     	fs.open(filename0, std::fstream::out);
     	for(int i = 0; i < recoV.size()-1 ; i++)
     	{
     		fs << i << "," << tfoto[i].tv_usec << "," << tfoto[i].tv_sec<< std::endl;
     	}
     	fs.close();
-
+*/
 
     if(recoV.size()>2 && recoV[1].x>0)
     {
