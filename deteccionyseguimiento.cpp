@@ -85,31 +85,32 @@ datosCoche buscaCoche(Mat frame, int color){
 
     //cv::drawContours(frame,contours,-1,CV_RGB(255,255,255),2); //para dibujar todos los contornos (debug)
 
-    // para cada uno de los contornos
+    // para cada uno de los contornos hallados tras la segmentacion del color elegido
     for (unsigned int i=0; i<contours.size(); i++){
 
     	RotatedRect box;
-
-    	contoursRect = cv::boundingRect(contours[i]);
-    	box = minAreaRect( contours[i] );
-    	A = contourArea(contours[i],true);
+    	contoursRect = cv::boundingRect(contours[i]);//rectangulo recto que circunscribe el contorno a estudiar
+    	box = minAreaRect( contours[i] );//rectangulo de area minima para rectangularidad
+    	A = contourArea(contours[i],true);//area real del contorno
 
     	//se calculan los descriptores de cada contorno para distinguir circulos y rectangulos
-    	W=box.size.width;
-    	L=box.size.height;
+    	W=box.size.width; //ancho del rectangulo
+    	L=box.size.height;//largo del rectangulo
 
-    	AR=W/L;
-    	difareas=1-abs(A)/(W*L);
-
-    	R=W*L/abs(A);
-
+    	AR=W/L;//aspect ratio del cuadrado
+    	difareas=1-abs(A)/(W*L); /*diferencia de areas entre un cuadrado de lado W=L
+					y el contorno estudiado*/
+    	R=W*L/abs(A);//rectangularidad
 
     	if (AR < 1.25 && AR > 0.75) // compruebo que el rectangulo se aproxime a un cuadrado
     		{
-    			if (difareas < 0.28 && difareas > 0.12)//compruebo que la diferencia de areas entre el cuadrado y el circulo tenga un valor aproximado al calculado teoricamente (dif de areas = area de cuadrado * 0.2146)
-    				//es un circulo
-    			{
-    				if(abs(A) > 600)
+    			if (difareas < 0.28 && difareas > 0.12)
+					/*compruebo que la diferencia de areas entre 
+					el cuadrado y el circulo tenga un valor aproximado al calculado teoricamente 
+					(dif de areas = area de cuadrado * 0.2146)*/
+    				
+    			{  	//es un circulo
+    				if(abs(A) > 600) //comprobacion de area minima
     				{
     					//if(circulo=0 || abs(A)>Areacirc) //prueba para quedarme con el circulo mayor
     					{
@@ -208,9 +209,9 @@ cv::KalmanFilter initKalman(int x, int y, float sigmaR1, float sigmaQ1, float si
     cv::KalmanFilter kf(4,2,0);
 
     kf.transitionMatrix = (cv::Mat_<float>(4,4) << 1,0,1,0,
-    											   0,1,0,1,
-												   0,0,1,0,
-												   0,0,0,1);
+    						   0,1,0,1,
+						   0,0,1,0,
+						   0,0,0,1);
 
     kf.measurementMatrix = (cv::Mat_<float>(2,4) << 1,0,0,0,
                                                     0,1,0,0);
@@ -225,7 +226,7 @@ cv::KalmanFilter initKalman(int x, int y, float sigmaR1, float sigmaQ1, float si
 
     kf.errorCovPost = (cv::Mat_<float>(4,4) << sigmaP,0,0,0,
                                                0,sigmaP,0,0,
-											   0,0,sigmaP,0,
+					       0,0,sigmaP,0,
                                                0,0,0,sigmaP);
 
     kf.statePost.at<float>(0) = x;
@@ -269,7 +270,7 @@ void updateKalman(cv::KalmanFilter &kf, int x, int y, bool useMeasurement){
 
 /*--------------------------------------------------------------------------*/
 
-// Returns the x, y, w, h values of Kalman filter prediction
+// Returns the x, y values of Kalman filter prediction
 cv::Point getKalmanPrediction(cv::KalmanFilter kf){
 	return cv::Point(kf.statePre.at<float>(0),kf.statePre.at<float>(1));
 
@@ -354,7 +355,7 @@ int main( int argc, char *argv[] ){
 
         datosCoche cocheRojo, cocheVerde, cocheAmarillo;
 
-        //se llama a la funciona para cada color
+        //se llama a la funcion para cada color
         cocheRojo = buscaCoche(frame,ROJO);
         cocheVerde = buscaCoche(frame,VERDE);
         cocheAmarillo = buscaCoche(frame,AMARILLO);
